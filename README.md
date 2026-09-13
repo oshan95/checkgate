@@ -27,3 +27,15 @@ CheckGate is built to close that specific, three-part gap: **explainability**, *
 | Reference data sources | NVD (CVE), MITRE (CWE) |
 | SAST baseline | CodeQL |
 | Evaluation benchmark | [MegaVul](https://github.com/Icyrockton/MegaVul) (Java subset) |
+
+## Scope
+
+CheckGate is a **CWE-classification tool**: it identifies categories of coding weakness in Java source code (e.g. SQL injection, access control issues, XSS). It is designed for incremental, pull-request-triggered scanning of a code diff, not full-repository baseline scans. A guard rail skips automated scanning and recommends manual review for changes above a size threshold. Full-repository scanning is considered as future work.
+
+## Author
+
+**Oshan Mendis**
+
+## License
+
+License to be determined before first release.
