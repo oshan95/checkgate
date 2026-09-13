@@ -12,6 +12,4 @@ CheckGate is built to close that specific, three-part gap: **explainability**, *
 
 ## Architecture
 
-```
 ![Alt text](docs/images/Architecture Diagram.png)
-```
