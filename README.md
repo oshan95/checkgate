@@ -13,3 +13,17 @@ CheckGate is built to close that specific, three-part gap: **explainability**, *
 ## Architecture
 
 ![Architecture Diagram](docs/images/architecture-diagram.png)
+
+## Tech Stack
+
+| Layer | Technology |
+|---|---|
+| Backend service | Java, Spring Boot |
+| Cloud hosting | AWS |
+| CI/CD | GitHub Actions |
+| LLM (generation) | Google Gemini API |
+| LLM (embeddings) | `gemini-embedding-001` |
+| Vector database | pgvector on AWS RDS (Postgres) |
+| Reference data sources | NVD (CVE), MITRE (CWE) |
+| SAST baseline | CodeQL |
+| Evaluation benchmark | [MegaVul](https://github.com/Icyrockton/MegaVul) (Java subset) |
