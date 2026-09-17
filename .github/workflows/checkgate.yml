@@ -1,0 +1,15 @@
+name: CheckGate Scan
+
+on:
+  pull_request:
+    types: [opened, synchronize]
+
+jobs:
+  scan:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Trigger CheckGate scan
+        run: echo "Skeleton workflow — real scan logic to be implemented later"
