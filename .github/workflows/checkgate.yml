@@ -10,6 +10,17 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
-      - name: Trigger CheckGate scan
-        run: echo "Skeleton workflow — real scan logic to be implemented later"
+      - name: Get PR diff
+        id: diff
+        run: |
+          git diff origin/${{ github.base_ref }}...origin/${{ github.head_ref }} > pr.diff
+
+#      Commented out as the deployment is not setup as of now
+#      - name: Send diff to CheckGate
+#        run: |
+#          curl -X POST "${{ secrets.CHECKGATE_URL }}/scan" \
+#            -H "Content-Type: text/plain" \
+#            --data-binary @pr.diff

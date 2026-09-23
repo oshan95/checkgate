@@ -25,3 +25,4 @@ checkgate:
     nvd-api-key: ${NVD_API_KEY}
   scan:
     max-diff-lines: 1000   # guard rail
+    max-files: 50
