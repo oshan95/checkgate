@@ -1,10 +1,13 @@
 package com.oshan.checkgate.github;
 
+import com.oshan.checkgate.aggregation.ResultAggregationService;
 import com.oshan.checkgate.diff.DiffExtractionService;
 import com.oshan.checkgate.diff.DiffFilterService;
 import com.oshan.checkgate.diff.GuardRailService;
 import com.oshan.checkgate.model.FileDiff;
+import com.oshan.checkgate.model.VulnerabilityFinding;
 import org.springframework.stereotype.Controller;
+import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RestController;
@@ -17,12 +20,14 @@ public class ScanController {
     private final DiffExtractionService diffExtractionService;
     private final DiffFilterService diffFilterService;
     private final GuardRailService guardRailService;
+    private final ResultAggregationService resultAggregationService;
 
     public ScanController(DiffExtractionService diffExtractionService, DiffFilterService diffFilterService
-            , GuardRailService guardRailService) {
+            , GuardRailService guardRailService, ResultAggregationService resultAggregationService) {
         this.diffExtractionService =  diffExtractionService;
         this.diffFilterService = diffFilterService;
         this.guardRailService = guardRailService;
+        this.resultAggregationService = resultAggregationService;
     }
 
     //Receives the scan request triggered by the GitHub Actions workflow
@@ -38,7 +43,10 @@ public class ScanController {
                 .filter(diffFilterService::shouldScan)
                 .toList();
 
-        return "Extracted " + files.size() + " file(s), " + filesToScan.size() + " after filtering";
+        // TODO: replace the empty list with real Gemini calls
+        List<VulnerabilityFinding> findings = List.of(); // placeholder until wired to Gemini
+
+        return resultAggregationService.buildPrComment(findings);
     }
 
 }
