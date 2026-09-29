@@ -14,4 +14,14 @@ public class WebClientConfig {
     public WebClient.Builder webClientBuilder() {
         return WebClient.builder();
     }
+
+    //WebClient builder for GitHub interactions
+    @Bean
+    public WebClient githubWebClient(@Value("${github.token}") String githubToken) {
+        return WebClient.builder()
+                .baseUrl("https://api.github.com")
+                .defaultHeader("Authorization", "Bearer " + githubToken)
+                .defaultHeader("Accept", "application/vnd.github+json")
+                .build();
+    }
 }
