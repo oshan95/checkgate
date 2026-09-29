@@ -6,7 +6,9 @@ import com.google.genai.types.GenerateContentConfig;
 import com.google.genai.types.GenerateContentResponse;
 import com.google.genai.types.Schema;
 import com.google.genai.types.Type;
+import org.springframework.stereotype.Service;
 
+@Service
 public class GeminiAnalysisService {
     private static final String ANALYSIS_MODEL = "gemini-2.5-flash";
 
