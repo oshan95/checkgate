@@ -21,6 +21,7 @@ jobs:
 #      Commented out as the deployment is not setup as of now
 #      - name: Send diff to CheckGate
 #        run: |
+#          DIFF=$(git diff origin/${{ github.base_ref }}...origin/${{ github.head_ref }} | jq -Rs .)
 #          curl -X POST "${{ secrets.CHECKGATE_URL }}/scan" \
-#            -H "Content-Type: text/plain" \
-#            --data-binary @pr.diff
+#            -H "Content-Type: application/json" \
+#            -d "{\"repoOwner\":\"${{ github.repository_owner }}\",\"repoName\":\"${{ github.event.repository.name }}\",\"prNumber\":${{ github.event.pull_request.number }},\"diff\":$DIFF}"
