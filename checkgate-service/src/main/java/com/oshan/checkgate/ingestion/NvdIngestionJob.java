@@ -27,7 +27,7 @@ public class NvdIngestionJob {
         OffsetDateTime since = OffsetDateTime.now().minusHours(48);
         List<NvdApiClient.NvdCveEntry> entries = nvdApiClient.fetchModifiedSince(since);
 
-        int batchSize = 5; // conservative — verify actual limit against real API responses
+        int batchSize = 5;
         for (int i = 0; i < entries.size(); i += batchSize) {
             List<NvdApiClient.NvdCveEntry> chunk = entries.subList(i, Math.min(i + batchSize, entries.size()));
             List<String> descriptions = chunk.stream().map(NvdApiClient.NvdCveEntry::description).toList();
