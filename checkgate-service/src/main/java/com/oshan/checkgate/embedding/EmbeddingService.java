@@ -36,4 +36,21 @@ public class EmbeddingService {
         return result;
     }
 
+    // Batch embed contents
+    public List<float[]> embedBatch(List<String> texts) {
+        EmbedContentResponse response = geminiClient.models.embedContent(EMBEDDING_MODEL, texts, null);
+
+        List<ContentEmbedding> embeddings = response.embeddings()
+                .orElseThrow(() -> new IllegalStateException("No embeddings returned from Gemini"));
+
+        return embeddings.stream()
+                .map(e -> {
+                    List<Float> values = e.values().orElseThrow();
+                    float[] result = new float[values.size()];
+                    for (int i = 0; i < values.size(); i++) result[i] = values.get(i);
+                    return result;
+                })
+                .toList();
+    }
+
 }
