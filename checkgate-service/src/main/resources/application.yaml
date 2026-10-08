@@ -2,6 +2,10 @@ server:
   port: 8080
 
 spring:
+  task:
+    scheduling:
+      pool:
+        size: 2   # lets the NVD and MITRE jobs overlap once
   application:
     name: checkgate-service
   config:
@@ -23,6 +27,7 @@ gemini:
 checkgate:
   ingestion:
     nvd-api-key: ${NVD_API_KEY}
+    nvd-page-size: 200
   scan:
     max-diff-lines: 1000   # guard rail
     max-files: 50

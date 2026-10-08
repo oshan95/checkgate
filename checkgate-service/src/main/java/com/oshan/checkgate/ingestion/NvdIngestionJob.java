@@ -22,7 +22,7 @@ public class NvdIngestionJob {
     }
 
     // Scheduled job pulling new/updated CVE entries from the NVD
-    @Scheduled(cron = "0 0 2 * * *")
+    @Scheduled(cron = "0 0 2 * * *", zone = "Pacific/Auckland")
     public void runIngestion() {
         OffsetDateTime since = OffsetDateTime.now().minusHours(48);
         List<NvdApiClient.NvdCveEntry> entries = nvdApiClient.fetchModifiedSince(since);

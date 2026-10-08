@@ -6,7 +6,6 @@ import com.oshan.checkgate.diff.DiffFilterService;
 import com.oshan.checkgate.diff.GuardRailService;
 import com.oshan.checkgate.model.FileDiff;
 import com.oshan.checkgate.model.VulnerabilityFinding;
-import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -55,6 +54,5 @@ public class ScanController {
         gitHubCommentService.postComment(request.repoOwner(), request.repoName(), request.prNumber(), comment);
         return comment;
     }
-
 
 }
