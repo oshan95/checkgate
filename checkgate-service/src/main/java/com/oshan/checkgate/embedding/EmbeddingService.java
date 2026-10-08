@@ -3,12 +3,18 @@ package com.oshan.checkgate.embedding;
 import com.google.genai.Client;
 import com.google.genai.types.ContentEmbedding;
 import com.google.genai.types.EmbedContentResponse;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
 
 @Service
 public class EmbeddingService {
+
+    private static final Logger log = LoggerFactory.getLogger(EmbeddingService.class);
+
+    private static final int MAX_RETRIES = 3;
 
     private static final String EMBEDDING_MODEL = "gemini-embedding-001";
 
@@ -51,6 +57,39 @@ public class EmbeddingService {
                     return result;
                 })
                 .toList();
+    }
+
+    public List<float[]> embedBatchWithRetry(List<String> texts) {
+        int attempt = 0;
+        while (true) {
+            try {
+                return embedBatch(texts);
+            } catch (com.google.genai.errors.ClientException e) {
+                String msg = e.getMessage() == null ? "" : e.getMessage();
+                if (!msg.startsWith("429")) throw e;
+                if (msg.contains("PerDay")) {
+                    // Waiting 30s can't fix a daily cap, so stop and let the next run resume
+                    throw new IllegalStateException(
+                            "Gemini daily embedding quota exhausted; ingestion resumes on the next run", e);
+                }
+                if (++attempt > MAX_RETRIES) throw e;
+                log.warn("Gemini per-minute rate limit (429), waiting 30s, attempt {}", attempt);
+                pause(30_000);
+            } catch (com.google.genai.errors.GenAiIOException e) {
+                if (++attempt > MAX_RETRIES) throw e;
+                log.warn("Gemini network error, retrying in {}s, attempt {}: {}", 5 * attempt, attempt, e.getMessage());
+                pause(5_000L * attempt);
+            }
+        }
+    }
+
+    private void pause(long ms) {
+        try {
+            Thread.sleep(ms);
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            throw new IllegalStateException(e);
+        }
     }
 
 }

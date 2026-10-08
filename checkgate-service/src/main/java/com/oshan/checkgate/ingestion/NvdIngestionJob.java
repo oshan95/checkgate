@@ -32,7 +32,7 @@ public class NvdIngestionJob {
             List<NvdApiClient.NvdCveEntry> chunk = entries.subList(i, Math.min(i + batchSize, entries.size()));
             List<String> descriptions = chunk.stream().map(NvdApiClient.NvdCveEntry::description).toList();
 
-            List<float[]> embeddings = embeddingService.embedBatch(descriptions);
+            List<float[]> embeddings = embeddingService.embedBatchWithRetry(descriptions);
 
             for (int j = 0; j < chunk.size(); j++) {
                 var entry = chunk.get(j);

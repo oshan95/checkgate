@@ -12,7 +12,10 @@ import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.regex.Pattern;
 
 @Service
 public class NvdApiClient {
@@ -34,6 +37,12 @@ public class NvdApiClient {
     @Value("${checkgate.ingestion.nvd-api-key:}")
     private String nvdApiKey;
 
+    @Value("${checkgate.ingestion.nvd-keywords:java}") // comma-separated; an entry is kept if it matches ANY keyword
+    private List<String> keywords;
+
+    private static final Pattern JAVASCRIPT = Pattern.compile("(?i)\\bjavascript\\b");
+    private static final Pattern JAVA_WORD = Pattern.compile("(?i)\\bjava\\b");
+
     public NvdApiClient(WebClient.Builder webClientBuilder) {
         this.webClientBuilder = webClientBuilder;
     }
@@ -43,13 +52,25 @@ public class NvdApiClient {
     public List<NvdCveEntry> fetchModifiedSince(OffsetDateTime since) {
         WebClient client = webClientBuilder.clone()
                 .baseUrl(BASE_URL)
-                .codecs(c -> c.defaultCodecs().maxInMemorySize(10 * 1024 * 1024)) // 10MB
+                .codecs(c -> c.defaultCodecs().maxInMemorySize(10 * 1024 * 1024))
                 .build();
 
-        // Compute the window once so every page queries the same range
         String start = since.withOffsetSameInstant(ZoneOffset.UTC).format(NVD_DATE_FORMAT);
         String end = OffsetDateTime.now(ZoneOffset.UTC).format(NVD_DATE_FORMAT);
 
+        // One request series per keyword (NVD can't do OR), merged by CVE ID
+        Map<String, NvdCveEntry> merged = new LinkedHashMap<>();
+        for (String keyword : keywords) {
+            if (keyword.isBlank()) continue;
+            for (NvdCveEntry e : fetchForKeyword(client, start, end, keyword.trim())) {
+                merged.putIfAbsent(e.id(), e);
+            }
+        }
+        log.info("NVD: {} unique entries across {} keywords", merged.size(), keywords.size());
+        return new ArrayList<>(merged.values());
+    }
+
+    private List<NvdCveEntry> fetchForKeyword(WebClient client, String start, String end, String keyword) {
         List<NvdCveEntry> all = new ArrayList<>();
         int startIndex = 0;
         int totalResults;
@@ -61,6 +82,7 @@ public class NvdApiClient {
                     .uri(u -> u
                             .queryParam("lastModStartDate", start)
                             .queryParam("lastModEndDate", end)
+                            .queryParam("keywordSearch", keyword)
                             .queryParam("resultsPerPage", pageSize)
                             .queryParam("startIndex", index)
                             .build())
@@ -70,18 +92,13 @@ public class NvdApiClient {
                     .block();
 
             totalResults = parsePage(response, all);
-            log.info("Fetched NVD page at startIndex={}, totalResults={}", index, totalResults);
+            log.info("NVD keyword '{}': startIndex={}, totalResults={}", keyword, index, totalResults);
 
             startIndex += pageSize;
             pagesFetched++;
+            sleep(6000); // NVD recommends at least 6s between requests
 
-            if (maxPages > 0 && pagesFetched >= maxPages) {
-                log.info("Reached nvd-max-pages={}, stopping early", maxPages);
-                break;
-            }
-            if (startIndex < totalResults) {
-                sleep(6000); // NVD recommends at least 6s between requests
-            }
+            if (maxPages > 0 && pagesFetched >= maxPages) break;
         } while (startIndex < totalResults);
 
         return all;
@@ -103,6 +120,7 @@ public class NvdApiClient {
                     }
                 }
                 if (description.isBlank()) continue;
+                if (JAVASCRIPT.matcher(description).find() && !JAVA_WORD.matcher(description).find()) continue;
                 out.add(new NvdCveEntry(id, description, OffsetDateTime.parse(lastModified + "Z")));
             }
             return root.path("totalResults").asInt();
