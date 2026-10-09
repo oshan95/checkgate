@@ -56,4 +56,17 @@ public class GeminiAnalysisService {
                 """.formatted(annotatedDiff, retrievedContext);
         return geminiClient.models.generateContent(ANALYSIS_MODEL, prompt, CONFIG);
     }
+
+    public String describeForRetrieval(String annotatedDiff) {
+        String prompt = """
+            If this Java code contains no concrete security-relevant operation (user input, file or
+            network access, SQL, cryptography, authentication, deserialisation, secrets), reply with
+            exactly: NONE
+            Otherwise, in two sentences, describe the main security weakness using wording like a
+            CWE entry (weakness name plus how it occurs). Do not mention variable names or line numbers.
+
+            %s
+            """.formatted(annotatedDiff);
+        return geminiClient.models.generateContent(ANALYSIS_MODEL, prompt, null).text().strip();
+    }
 }

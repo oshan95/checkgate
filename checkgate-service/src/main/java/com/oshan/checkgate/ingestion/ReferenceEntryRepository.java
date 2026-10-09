@@ -64,7 +64,7 @@ public class ReferenceEntryRepository {
                 new MapSqlParameterSource().addValue("s", source).addValue("v", version));
     }
 
-    private String toVectorLiteral(float[] embedding) {
+    public static String toVectorLiteral(float[] embedding) {
         StringBuilder sb = new StringBuilder("[");
         for (int i = 0; i < embedding.length; i++) {
             if (i > 0) sb.append(",");

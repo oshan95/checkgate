@@ -4,8 +4,13 @@ import com.oshan.checkgate.aggregation.ResultAggregationService;
 import com.oshan.checkgate.diff.DiffExtractionService;
 import com.oshan.checkgate.diff.DiffFilterService;
 import com.oshan.checkgate.diff.GuardRailService;
+import com.oshan.checkgate.embedding.EmbeddingService;
 import com.oshan.checkgate.model.FileDiff;
 import com.oshan.checkgate.model.VulnerabilityFinding;
+import com.oshan.checkgate.rag.GeminiAnalysisService;
+import com.oshan.checkgate.rag.GeminiResponseParser;
+import com.oshan.checkgate.rag.RagRetrievalService;
+import com.oshan.checkgate.rag.VectorSearchService;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -22,14 +27,28 @@ public class ScanController {
     private final ResultAggregationService resultAggregationService;
     private final GitHubCommentService gitHubCommentService;
 
+    private final GeminiAnalysisService geminiAnalysisService;
+    private final GeminiResponseParser geminiResponseParser;
+
+    private final VectorSearchService vectorSearchService;
+    private final EmbeddingService embeddingService;
+    private final RagRetrievalService ragRetrievalService;
+
     public ScanController(DiffExtractionService diffExtractionService, DiffFilterService diffFilterService
             , GuardRailService guardRailService, ResultAggregationService resultAggregationService
-            , GitHubCommentService gitHubCommentService) {
+            , GitHubCommentService gitHubCommentService, GeminiAnalysisService geminiAnalysisService
+            , GeminiResponseParser geminiResponseParser, VectorSearchService vectorSearchService
+            , EmbeddingService embeddingService, RagRetrievalService ragRetrievalService) {
         this.diffExtractionService =  diffExtractionService;
         this.diffFilterService = diffFilterService;
         this.guardRailService = guardRailService;
         this.resultAggregationService = resultAggregationService;
         this.gitHubCommentService = gitHubCommentService;
+        this.geminiAnalysisService = geminiAnalysisService;
+        this.geminiResponseParser = geminiResponseParser;
+        this.vectorSearchService = vectorSearchService;
+        this.embeddingService = embeddingService;
+        this.ragRetrievalService =  ragRetrievalService;
     }
 
     //Receives the scan request triggered by the GitHub Actions workflow
@@ -53,6 +72,29 @@ public class ScanController {
 
         gitHubCommentService.postComment(request.repoOwner(), request.repoName(), request.prNumber(), comment);
         return comment;
+    }
+
+    @GetMapping("/test-analysis")
+    public String testAnalysis() throws Exception {
+        String diff = """
+            1: String q = "SELECT * FROM users WHERE id = '" + request.getParameter("id") + "'";
+            2: Statement st = connection.createStatement();
+            3: ResultSet rs = st.executeQuery(q);
+            """;
+        String context = "CWE-89: SQL Injection. The product constructs all or part of an SQL "
+                + "command using externally-influenced input.";
+
+        var response = geminiAnalysisService.analyze(diff, context);
+        return response.text() + "\n---\n" + geminiResponseParser.parse(response);
+    }
+
+    @PostMapping("/test-search")
+    public String testSearch(@RequestBody String code) {
+        var r = ragRetrievalService.retrieveForCode(code);
+        return "lowConfidence=" + r.lowConfidence() + "\n" + r.description() + "\n---\n"
+                + r.references().stream()
+                .map(x -> "%.3f  %s  %s".formatted(x.similarity(), x.id(), x.title()))
+                .collect(java.util.stream.Collectors.joining("\n"));
     }
 
 }
