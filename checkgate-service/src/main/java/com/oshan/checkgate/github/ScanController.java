@@ -58,10 +58,4 @@ public class ScanController {
         return comment;
     }
 
-    @GetMapping("/test-cwe-ingestion")
-    public String testCweIngestion() {
-        mitreIngestionJob.runIngestion();
-        return "CWE ingestion finished";
-    }
-
 }
