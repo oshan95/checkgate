@@ -78,36 +78,4 @@ public class ScanController {
         return comment;
     }
 
-    @GetMapping("/test-analysis")
-    public String testAnalysis() throws Exception {
-        String diff = """
-            1: String q = "SELECT * FROM users WHERE id = '" + request.getParameter("id") + "'";
-            2: Statement st = connection.createStatement();
-            3: ResultSet rs = st.executeQuery(q);
-            """;
-        String context = "CWE-89: SQL Injection. The product constructs all or part of an SQL "
-                + "command using externally-influenced input.";
-
-        var response = geminiAnalysisService.analyze(diff, context);
-        return response.text() + "\n---\n" + geminiResponseParser.parse(response);
-    }
-
-    @PostMapping("/test-search")
-    public String testSearch(@RequestBody String code) {
-        var r = ragRetrievalService.retrieveForCode(code);
-        return "lowConfidence=" + r.lowConfidence() + "\n" + r.description() + "\n---\n"
-                + r.references().stream()
-                .map(x -> "%.3f  %s  %s".formatted(x.similarity(), x.id(), x.title()))
-                .collect(java.util.stream.Collectors.joining("\n"));
-    }
-
-    @PostMapping("/test-annotate")
-    public String testAnnotate(@RequestBody String rawDiff) {
-        return diffExtractionService.extractDiff(rawDiff).stream()
-                .map(lineAnnotationService::annotate)
-                .map(a -> a.filePath() + "\nadded=" + a.addedLines() + "\nvisible=" + a.visibleLines()
-                        + "\n" + a.annotatedText())
-                .collect(java.util.stream.Collectors.joining("\n=====\n"));
-    }
-
 }
