@@ -11,6 +11,8 @@ import java.util.List;
 @Service
 public class RagRetrievalService {
 
+    private static final org.slf4j.Logger log = org.slf4j.LoggerFactory.getLogger(RagRetrievalService.class);
+
     public record RetrievalResult(String description, List<RetrievedReference> references,
                                   boolean lowConfidence) { }
 
@@ -33,12 +35,19 @@ public class RagRetrievalService {
 
     // Describe the code in words, embed that, search, and flag weak or empty retrieval.
     public RetrievalResult retrieveForCode(String annotatedCode) {
+        long t0 = System.currentTimeMillis();
         String description = analysisService.describeForRetrieval(annotatedCode);
+        long t1 = System.currentTimeMillis();
         if ("NONE".equalsIgnoreCase(description)) {
+            log.info("RAG timing: describe={}ms (NONE)", t1 - t0);
             return new RetrievalResult(description, List.of(), true);
         }
-        List<RetrievedReference> refs =
-                vectorSearchService.findRelevant(embeddingService.embed(description), topN);
+        float[] vector = embeddingService.embed(description);
+        long t2 = System.currentTimeMillis();
+        List<RetrievedReference> refs = vectorSearchService.findRelevant(vector, topN);
+        long t3 = System.currentTimeMillis();
+        log.info("RAG timing: describe={}ms embed={}ms search={}ms", t1 - t0, t2 - t1, t3 - t2);
+
         boolean weak = refs.isEmpty() || refs.get(0).similarity() < minSimilarity;
         return new RetrievalResult(description, refs, weak);
     }

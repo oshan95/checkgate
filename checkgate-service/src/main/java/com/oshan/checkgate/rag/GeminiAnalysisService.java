@@ -2,10 +2,7 @@ package com.oshan.checkgate.rag;
 
 import com.google.common.collect.ImmutableMap;
 import com.google.genai.Client;
-import com.google.genai.types.GenerateContentConfig;
-import com.google.genai.types.GenerateContentResponse;
-import com.google.genai.types.Schema;
-import com.google.genai.types.Type;
+import com.google.genai.types.*;
 import org.springframework.stereotype.Service;
 
 @Service
@@ -44,29 +41,43 @@ public class GeminiAnalysisService {
     // Sends the diff plus retrieved CWE/CVE context to Gemini, requesting structured output (vulnerability type, severity, reasoning).
     public GenerateContentResponse analyze(String annotatedDiff, String retrievedContext) {
         String prompt = """
-                You are a security code reviewer. Analyse the following Java code diff for vulnerabilities.
-                Only report genuine security issues, not style or formatting concerns.
-                If no vulnerabilities are found, return an empty array.
-
-                Code diff (line-annotated):
-                %s
-
-                Relevant CWE/CVE reference data:
-                %s
-                """.formatted(annotatedDiff, retrievedContext);
+            You are a security code reviewer. Analyse the following Java code diff for vulnerabilities.
+            Only report genuine security issues, not style or formatting concerns.
+            If no vulnerabilities are found, return an empty array.
+    
+            Each line starts with its line number in the new file. Lines starting with "+" were added.
+            Lines starting with "-" were removed, have no number, and must not be reported.
+            reportedLine must be the number shown at the start of the vulnerable line.
+    
+            Code diff (line-annotated):
+            %s
+    
+            Relevant CWE/CVE reference data:
+            %s
+            """.formatted(annotatedDiff, retrievedContext);
         return geminiClient.models.generateContent(ANALYSIS_MODEL, prompt, CONFIG);
     }
 
     public String describeForRetrieval(String annotatedDiff) {
         String prompt = """
-            If this Java code contains no concrete security-relevant operation (user input, file or
-            network access, SQL, cryptography, authentication, deserialisation, secrets), reply with
-            exactly: NONE
-            Otherwise, in two sentences, describe the main security weakness using wording like a
-            CWE entry (weakness name plus how it occurs). Do not mention variable names or line numbers.
+            Decide whether this Java code performs any security-relevant operation: handling user or
+            external input, file or network access, SQL or other queries, cryptography, authentication
+            or credentials, secrets, deserialization, or process execution.
+
+            If it clearly does none of these (for example pure arithmetic or simple getters), reply
+            with exactly: NONE
+            If you are unsure, do not reply NONE.
+
+            Otherwise, in two sentences, describe the main security weakness using wording like a CWE
+            entry (weakness name plus how it occurs). Do not mention variable names or line numbers.
 
             %s
             """.formatted(annotatedDiff);
-        return geminiClient.models.generateContent(ANALYSIS_MODEL, prompt, null).text().strip();
+
+        GenerateContentConfig cfg = GenerateContentConfig.builder()
+                .temperature(0.0f)
+                .thinkingConfig(ThinkingConfig.builder().thinkingBudget(256).build())
+                .build();
+        return geminiClient.models.generateContent(ANALYSIS_MODEL, prompt, cfg).text().strip();
     }
 }

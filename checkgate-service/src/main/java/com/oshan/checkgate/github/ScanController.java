@@ -5,6 +5,7 @@ import com.oshan.checkgate.diff.DiffExtractionService;
 import com.oshan.checkgate.diff.DiffFilterService;
 import com.oshan.checkgate.diff.GuardRailService;
 import com.oshan.checkgate.embedding.EmbeddingService;
+import com.oshan.checkgate.embedding.LineAnnotationService;
 import com.oshan.checkgate.model.FileDiff;
 import com.oshan.checkgate.model.VulnerabilityFinding;
 import com.oshan.checkgate.rag.GeminiAnalysisService;
@@ -33,12 +34,14 @@ public class ScanController {
     private final VectorSearchService vectorSearchService;
     private final EmbeddingService embeddingService;
     private final RagRetrievalService ragRetrievalService;
+    private final LineAnnotationService lineAnnotationService;
 
     public ScanController(DiffExtractionService diffExtractionService, DiffFilterService diffFilterService
             , GuardRailService guardRailService, ResultAggregationService resultAggregationService
             , GitHubCommentService gitHubCommentService, GeminiAnalysisService geminiAnalysisService
             , GeminiResponseParser geminiResponseParser, VectorSearchService vectorSearchService
-            , EmbeddingService embeddingService, RagRetrievalService ragRetrievalService) {
+            , EmbeddingService embeddingService, RagRetrievalService ragRetrievalService
+            , LineAnnotationService lineAnnotationService) {
         this.diffExtractionService =  diffExtractionService;
         this.diffFilterService = diffFilterService;
         this.guardRailService = guardRailService;
@@ -49,6 +52,7 @@ public class ScanController {
         this.vectorSearchService = vectorSearchService;
         this.embeddingService = embeddingService;
         this.ragRetrievalService =  ragRetrievalService;
+        this.lineAnnotationService = lineAnnotationService;
     }
 
     //Receives the scan request triggered by the GitHub Actions workflow
@@ -95,6 +99,15 @@ public class ScanController {
                 + r.references().stream()
                 .map(x -> "%.3f  %s  %s".formatted(x.similarity(), x.id(), x.title()))
                 .collect(java.util.stream.Collectors.joining("\n"));
+    }
+
+    @PostMapping("/test-annotate")
+    public String testAnnotate(@RequestBody String rawDiff) {
+        return diffExtractionService.extractDiff(rawDiff).stream()
+                .map(lineAnnotationService::annotate)
+                .map(a -> a.filePath() + "\nadded=" + a.addedLines() + "\nvisible=" + a.visibleLines()
+                        + "\n" + a.annotatedText())
+                .collect(java.util.stream.Collectors.joining("\n=====\n"));
     }
 
 }
