@@ -3,16 +3,19 @@ package com.oshan.checkgate.rag;
 import com.google.common.collect.ImmutableMap;
 import com.google.genai.Client;
 import com.google.genai.types.*;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
 @Service
 public class GeminiAnalysisService {
-    private static final String ANALYSIS_MODEL = "gemini-2.5-flash";
 
     private final Client geminiClient;
 
-    public GeminiAnalysisService(Client geminiClient) {
+    private final String model;
+
+    public GeminiAnalysisService(Client geminiClient, @Value("${gemini.model}") String model) {
         this.geminiClient = geminiClient;
+        this.model = model;
     }
 
     private static final Schema FINDING_SCHEMA =
@@ -35,7 +38,7 @@ public class GeminiAnalysisService {
             GenerateContentConfig.builder()
                     .responseMimeType("application/json")
                     .responseSchema(FINDING_SCHEMA)
-                    .temperature(0.0f)
+//                    .temperature(0.0f)
                     .build();
 
 
@@ -56,7 +59,7 @@ public class GeminiAnalysisService {
             Relevant CWE/CVE reference data:
             %s
             """.formatted(annotatedDiff, retrievedContext);
-        return geminiClient.models.generateContent(ANALYSIS_MODEL, prompt, CONFIG);
+        return geminiClient.models.generateContent(model, prompt, CONFIG);
     }
 
     public String describeForRetrieval(String annotatedDiff) {
@@ -79,6 +82,6 @@ public class GeminiAnalysisService {
                 .temperature(0.0f)
                 .thinkingConfig(ThinkingConfig.builder().thinkingBudget(256).build())
                 .build();
-        return geminiClient.models.generateContent(ANALYSIS_MODEL, prompt, cfg).text().strip();
+        return geminiClient.models.generateContent(model, prompt, cfg).text().strip();
     }
 }
