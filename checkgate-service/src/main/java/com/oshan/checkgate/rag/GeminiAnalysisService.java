@@ -35,6 +35,7 @@ public class GeminiAnalysisService {
             GenerateContentConfig.builder()
                     .responseMimeType("application/json")
                     .responseSchema(FINDING_SCHEMA)
+                    .temperature(0.0f)
                     .build();
 
 
