@@ -15,7 +15,11 @@ public class GeminiResponseParser {
     private final ObjectMapper objectMapper = new ObjectMapper();
 
     public List<VulnerabilityFinding> parse(GenerateContentResponse response) throws Exception {
-        RawFinding[] raw = objectMapper.readValue(response.text(), RawFinding[].class);
+        String text = response.text();
+        if (text == null || text.isBlank()) {
+            throw new IllegalStateException("Gemini returned no text (empty or blocked response)");
+        }
+        RawFinding[] raw = objectMapper.readValue(text, RawFinding[].class);
         return List.of(raw).stream()
                 .map(r -> new VulnerabilityFinding(
                         r.vulnerabilityType(), r.severity(), r.reasoning(), r.reportedLine(), false))

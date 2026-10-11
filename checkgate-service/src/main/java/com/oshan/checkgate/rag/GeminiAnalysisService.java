@@ -39,6 +39,7 @@ public class GeminiAnalysisService {
                     .responseMimeType("application/json")
                     .responseSchema(FINDING_SCHEMA)
 //                    .temperature(0.0f)
+                    .thinkingConfig(ThinkingConfig.builder().thinkingLevel(ThinkingLevel.Known.LOW))
                     .build();
 
 
@@ -79,8 +80,7 @@ public class GeminiAnalysisService {
             """.formatted(annotatedDiff);
 
         GenerateContentConfig cfg = GenerateContentConfig.builder()
-                .temperature(0.0f)
-                .thinkingConfig(ThinkingConfig.builder().thinkingBudget(256).build())
+                .thinkingConfig(ThinkingConfig.builder().thinkingLevel(ThinkingLevel.Known.LOW).build())
                 .build();
         return geminiClient.models.generateContent(model, prompt, cfg).text().strip();
     }
