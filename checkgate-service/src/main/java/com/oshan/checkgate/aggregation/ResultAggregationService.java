@@ -35,7 +35,7 @@ public class ResultAggregationService {
             sb.append("---\n\n");
             sb.append("### `").append(result.filePath()).append("`\n\n");
             if (!result.groundedByReferences()) {
-                sb.append("_No closely matching CWE/CVE reference was found for this file, "
+                sb.append("_No CWE/CVE reference met the similarity threshold for this file, "
                         + "so these findings rely on the model's general knowledge._\n\n");
             }
 

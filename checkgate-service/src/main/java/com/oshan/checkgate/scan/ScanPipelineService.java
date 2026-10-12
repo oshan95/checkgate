@@ -65,6 +65,12 @@ public class ScanPipelineService {
 
         var retrieval = ragRetrievalService.retrieveForCode(annotated.annotatedText());
         boolean grounded = !retrieval.lowConfidence();
+        log.info("Retrieval for {}: description='{}' topSimilarity={} grounded={} refs={}",
+                file.filePath(),
+                retrieval.description(),
+                retrieval.references().isEmpty() ? "n/a" : "%.3f".formatted(retrieval.references().get(0).similarity()),
+                grounded,
+                retrieval.references().stream().map(RetrievedReference::id).toList());
         String context = grounded ? formatReferences(retrieval.references()) : NO_CONTEXT;
 
         var response = geminiAnalysisService.analyze(annotated.annotatedText(), context);
