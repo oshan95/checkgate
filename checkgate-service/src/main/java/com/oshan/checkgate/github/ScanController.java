@@ -4,15 +4,9 @@ import com.oshan.checkgate.aggregation.ResultAggregationService;
 import com.oshan.checkgate.diff.DiffExtractionService;
 import com.oshan.checkgate.diff.DiffFilterService;
 import com.oshan.checkgate.diff.GuardRailService;
-import com.oshan.checkgate.embedding.EmbeddingService;
-import com.oshan.checkgate.embedding.LineAnnotationService;
 import com.oshan.checkgate.model.FileDiff;
-import com.oshan.checkgate.model.VulnerabilityFinding;
-import com.oshan.checkgate.rag.GeminiAnalysisService;
-import com.oshan.checkgate.rag.GeminiResponseParser;
-import com.oshan.checkgate.rag.RagRetrievalService;
-import com.oshan.checkgate.rag.VectorSearchService;
-import org.springframework.web.bind.annotation.GetMapping;
+import com.oshan.checkgate.model.ScanFileResult;
+import com.oshan.checkgate.scan.ScanPipelineService;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RestController;
@@ -27,32 +21,17 @@ public class ScanController {
     private final GuardRailService guardRailService;
     private final ResultAggregationService resultAggregationService;
     private final GitHubCommentService gitHubCommentService;
-
-    private final GeminiAnalysisService geminiAnalysisService;
-    private final GeminiResponseParser geminiResponseParser;
-
-    private final VectorSearchService vectorSearchService;
-    private final EmbeddingService embeddingService;
-    private final RagRetrievalService ragRetrievalService;
-    private final LineAnnotationService lineAnnotationService;
+    private final ScanPipelineService scanPipelineService;
 
     public ScanController(DiffExtractionService diffExtractionService, DiffFilterService diffFilterService
             , GuardRailService guardRailService, ResultAggregationService resultAggregationService
-            , GitHubCommentService gitHubCommentService, GeminiAnalysisService geminiAnalysisService
-            , GeminiResponseParser geminiResponseParser, VectorSearchService vectorSearchService
-            , EmbeddingService embeddingService, RagRetrievalService ragRetrievalService
-            , LineAnnotationService lineAnnotationService) {
+            , GitHubCommentService gitHubCommentService, ScanPipelineService scanPipelineService) {
         this.diffExtractionService =  diffExtractionService;
         this.diffFilterService = diffFilterService;
         this.guardRailService = guardRailService;
         this.resultAggregationService = resultAggregationService;
         this.gitHubCommentService = gitHubCommentService;
-        this.geminiAnalysisService = geminiAnalysisService;
-        this.geminiResponseParser = geminiResponseParser;
-        this.vectorSearchService = vectorSearchService;
-        this.embeddingService = embeddingService;
-        this.ragRetrievalService =  ragRetrievalService;
-        this.lineAnnotationService = lineAnnotationService;
+        this.scanPipelineService = scanPipelineService;
     }
 
     //Receives the scan request triggered by the GitHub Actions workflow
@@ -62,16 +41,11 @@ public class ScanController {
 
         String comment;
         if (guardRailService.exceedsSizeLimit(files)) {
-            comment = "Change too large for automated scan — manual review recommended.";
+            comment = "**CheckGate**: Change too large for automated scan. Manual review recommended.";
         } else {
-            List<FileDiff> filesToScan = files.stream()
-                    .filter(diffFilterService::shouldScan)
-                    .toList();
-
-            // TODO: replace the empty list with real Gemini calls
-            List<VulnerabilityFinding> findings = List.of(); // placeholder until wired to Gemini
-
-            comment = resultAggregationService.buildPrComment(findings);
+            List<FileDiff> filesToScan = files.stream().filter(diffFilterService::shouldScan).toList();
+            List<ScanFileResult> results = scanPipelineService.scanFiles(filesToScan);
+            comment = resultAggregationService.buildPrComment(results);
         }
 
         gitHubCommentService.postComment(request.repoOwner(), request.repoName(), request.prNumber(), comment);
