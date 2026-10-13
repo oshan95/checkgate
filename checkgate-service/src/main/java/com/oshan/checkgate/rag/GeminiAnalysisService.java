@@ -3,6 +3,7 @@ package com.oshan.checkgate.rag;
 import com.google.common.collect.ImmutableMap;
 import com.google.genai.Client;
 import com.google.genai.types.*;
+import com.oshan.checkgate.config.GeminiRetry;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
@@ -33,13 +34,15 @@ public class GeminiAnalysisService {
     private final String model;
     private final GenerateContentConfig analysisConfig;
     private final GenerateContentConfig retrievalConfig;
+    private final GeminiRetry retry;
 
 
 
     public GeminiAnalysisService(Client geminiClient,
                                  @Value("${gemini.model}") String model,
                                  @Value("${gemini.retrieval-thinking-level:MEDIUM}") String retrievalLevel,
-                                 @Value("${gemini.analysis-thinking-level:LOW}") String analysisLevel) {
+                                 @Value("${gemini.analysis-thinking-level:LOW}") String analysisLevel,
+                                 GeminiRetry retry) {
         this.geminiClient = geminiClient;
         this.model = model;
 
@@ -54,6 +57,8 @@ public class GeminiAnalysisService {
                 .responseSchema(FINDING_SCHEMA)
                 .thinkingConfig(ThinkingConfig.builder().thinkingLevel(analysis).build())
                 .build();
+
+        this.retry = retry;
 
         // Logged once at startup so every evaluation run records its exact settings
         log.info("Gemini settings: model={}, retrieval thinking={}, analysis thinking={}",
@@ -76,7 +81,8 @@ public class GeminiAnalysisService {
 
                 %s
                 """.formatted(annotatedDiff);
-        return geminiClient.models.generateContent(model, prompt, retrievalConfig).text().strip();
+        return retry.call("retrieval description",
+                () -> geminiClient.models.generateContent(model, prompt, retrievalConfig).text().strip());
     }
 
     // Sends the diff plus retrieved CWE/CVE context to Gemini, requesting structured output.
@@ -96,6 +102,7 @@ public class GeminiAnalysisService {
                 Relevant CWE/CVE reference data:
                 %s
                 """.formatted(annotatedDiff, retrievedContext);
-        return geminiClient.models.generateContent(model, prompt, analysisConfig);
+        return retry.call("analysis",
+                () -> geminiClient.models.generateContent(model, prompt, analysisConfig));
     }
 }

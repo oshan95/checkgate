@@ -3,6 +3,7 @@ package com.oshan.checkgate.embedding;
 import com.google.genai.Client;
 import com.google.genai.types.ContentEmbedding;
 import com.google.genai.types.EmbedContentResponse;
+import com.oshan.checkgate.config.GeminiRetry;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
@@ -20,15 +21,19 @@ public class EmbeddingService {
 
     private final Client geminiClient;
 
-    public EmbeddingService(Client geminiClient) {
+    private final GeminiRetry retry;
+
+    public EmbeddingService(Client geminiClient, GeminiRetry retry) {
         this.geminiClient = geminiClient;
+        this.retry = retry;
     }
 
     // Used both by the ingestion job (embedding reference entries) and at scan time for the code diff.
     // Must stay the same model for both sides, or similarity search wouldn't work.
 
     public float[] embed(String text) {
-        EmbedContentResponse response = geminiClient.models.embedContent(EMBEDDING_MODEL, text, null);
+        EmbedContentResponse response = retry.call("embedding",
+                () -> geminiClient.models.embedContent(EMBEDDING_MODEL, text, null));
 
         List<ContentEmbedding> embeddings = response.embeddings()
                 .orElseThrow(() -> new IllegalStateException("No embedding returned from Gemini"));
