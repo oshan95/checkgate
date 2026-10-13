@@ -1,0 +1,65 @@
+name: Deploy CheckGate
+
+on:
+  push:
+    branches:
+      - develop
+      - feature/24-deploy-and-secure-scan   # temporary, remove before merging
+  workflow_dispatch:
+
+concurrency:
+  group: deploy-checkgate
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: corretto
+          java-version: '25'
+
+      - name: Build JAR
+        run: mvn -B -f checkgate-service/pom.xml clean package -DskipTests
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ secrets.AWS_REGION }}
+
+      - name: Upload to S3 and deploy
+        env:
+          EB_APPLICATION: ${{ secrets.EB_APPLICATION }}
+          EB_ENVIRONMENT: ${{ secrets.EB_ENVIRONMENT }}
+        run: |
+          JAR=$(ls checkgate-service/target/*.jar | head -n 1)
+          LABEL="${GITHUB_SHA::7}-${GITHUB_RUN_NUMBER}"
+          BUCKET=$(aws elasticbeanstalk create-storage-location --query S3Bucket --output text)
+          KEY="checkgate-service/${LABEL}.jar"
+
+          aws s3 cp "$JAR" "s3://${BUCKET}/${KEY}"
+          aws elasticbeanstalk create-application-version \
+            --application-name "$EB_APPLICATION" \
+            --version-label "$LABEL" \
+            --source-bundle S3Bucket="$BUCKET",S3Key="$KEY"
+          aws elasticbeanstalk update-environment \
+            --environment-name "$EB_ENVIRONMENT" \
+            --version-label "$LABEL"
+          aws elasticbeanstalk wait environment-updated \
+            --environment-names "$EB_ENVIRONMENT"
+
+      - name: Smoke test
+        env:
+          CHECKGATE_URL: ${{ secrets.CHECKGATE_URL }}
+        run: |
+          curl -sS --fail --retry 6 --retry-delay 10 --retry-all-errors "$CHECKGATE_URL/health"
