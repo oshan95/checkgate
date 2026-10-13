@@ -32,6 +32,7 @@ checkgate:
   scan:
     max-diff-lines: 1000   # guard rail
     max-files: 50
+    api-token: ${CHECKGATE_API_TOKEN:}
   rag:
     min-similarity: 0.80
     top-n: 5
