@@ -14,14 +14,21 @@ jobs:
           fetch-depth: 0
 
       - name: Get PR diff
-        id: diff
         run: |
           git diff origin/${{ github.base_ref }}...origin/${{ github.head_ref }} > pr.diff
 
-#      Commented out as the deployment is not setup as of now
-#      - name: Send diff to CheckGate
-#        run: |
-#          DIFF=$(git diff origin/${{ github.base_ref }}...origin/${{ github.head_ref }} | jq -Rs .)
-#          curl -X POST "${{ secrets.CHECKGATE_URL }}/scan" \
-#            -H "Content-Type: application/json" \
-#            -d "{\"repoOwner\":\"${{ github.repository_owner }}\",\"repoName\":\"${{ github.event.repository.name }}\",\"prNumber\":${{ github.event.pull_request.number }},\"diff\":$DIFF}"
+      - name: Send diff to CheckGate
+        env:
+          CHECKGATE_URL: ${{ secrets.CHECKGATE_URL }}
+          CHECKGATE_TOKEN: ${{ secrets.CHECKGATE_TOKEN }}
+        run: |
+          jq -n \
+            --arg owner "${{ github.repository_owner }}" \
+            --arg repo "${{ github.event.repository.name }}" \
+            --argjson pr ${{ github.event.pull_request.number }} \
+            --rawfile diff pr.diff \
+            '{repoOwner:$owner, repoName:$repo, prNumber:$pr, diff:$diff}' > payload.json
+          curl -sS --fail-with-body --max-time 30 -X POST "$CHECKGATE_URL/scan" \
+            -H "Content-Type: application/json" \
+            -H "X-CheckGate-Token: $CHECKGATE_TOKEN" \
+            --data-binary @payload.json
