@@ -1,0 +1,34 @@
+name: CheckGate Scan
+
+on:
+  pull_request:
+    types: [opened, synchronize]
+
+jobs:
+  scan:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Get PR diff
+        run: |
+          git diff origin/${{ github.base_ref }}...origin/${{ github.head_ref }} > pr.diff
+
+      - name: Send diff to CheckGate
+        env:
+          CHECKGATE_URL: ${{ secrets.CHECKGATE_URL }}
+          CHECKGATE_TOKEN: ${{ secrets.CHECKGATE_TOKEN }}
+        run: |
+          jq -n \
+            --arg owner "${{ github.repository_owner }}" \
+            --arg repo "${{ github.event.repository.name }}" \
+            --argjson pr ${{ github.event.pull_request.number }} \
+            --rawfile diff pr.diff \
+            '{repoOwner:$owner, repoName:$repo, prNumber:$pr, diff:$diff}' > payload.json
+          curl -sS --fail-with-body --max-time 30 -X POST "$CHECKGATE_URL/scan" \
+            -H "Content-Type: application/json" \
+            -H "X-CheckGate-Token: $CHECKGATE_TOKEN" \
+            --data-binary @payload.json
