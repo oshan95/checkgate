@@ -1,0 +1,9 @@
+# Used only when the application is started with --spring.profiles.active=eval (the evaluation runner).
+spring:
+  main:
+    web-application-type: none   # no web server, so it cannot clash with a local app on port 8080
+
+logging:
+  level:
+    com.oshan.checkgate.scan.ScanPipelineService: WARN
+    com.oshan.checkgate.rag.RagRetrievalService: WARN
