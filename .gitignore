@@ -33,3 +33,9 @@ build/
 .vscode/
 
 application-local.yaml
+
+# Evaluation data and generated files. MegaVul is GPL-3.0, so keep its code out of git.
+evaluation/**/*.jsonl
+evaluation/results/
+evaluation/work/
+*.sarif

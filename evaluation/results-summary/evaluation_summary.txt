@@ -1,0 +1,88 @@
+functions in the evaluation set: 400 (200 vulnerable, 200 non-vulnerable) from 50 fix commits
+Gemini result lines used: 3600   error lines ignored: 0   functions missing a condition: 0
+runs per function and condition: [3]   functions CodeQL could be located in: 395
+
+A. CheckGate under each condition (all functions, runs averaged; 95% interval in brackets)
+   with = references where retrieval is strong enough; without = standard caution wording, no references; neutral = plain line, no references, no instruction
+             recall                 false positive rate    precision F1                    
+   with      0.268 [0.185, 0.355]   0.135 [0.088, 0.185]   0.665    0.382 [0.287, 0.472]  
+   without   0.177 [0.107, 0.255]   0.083 [0.045, 0.127]   0.679    0.280 [0.183, 0.373]  
+   neutral   0.162 [0.095, 0.240]   0.072 [0.035, 0.115]   0.693    0.262 [0.163, 0.361]  
+   line accuracy, share of ALL vulnerable functions with a finding on a labelled line:
+   with      exact 0.175 [0.105, 0.257]   within 2 lines 0.203 [0.128, 0.288]
+   without   exact 0.102 [0.045, 0.170]   within 2 lines 0.123 [0.062, 0.197]
+   neutral   exact 0.088 [0.037, 0.152]   within 2 lines 0.107 [0.047, 0.177]
+   line accuracy, share of DETECTED vulnerable functions (the finding lands on a labelled line):
+   with      exact 0.652   within 2 lines 0.758
+   without   exact 0.575   within 2 lines 0.698
+   neutral   exact 0.546   within 2 lines 0.660
+   difference (with minus without):
+      recall                         +0.092 [+0.057, +0.130]
+      false positive rate            +0.052 [+0.027, +0.078]
+      F1                             +0.102 [+0.058, +0.148]
+      line exact (all vulnerable)    +0.073 [+0.038, +0.108]
+   An interval that includes 0 means the difference could be chance at this sample size.
+
+B. Retrieval dose (condition 'with')
+   function-runs where references reached the model (grounded): 403 of 1200 (34%)
+   function-runs where the first step answered NONE: 349 of 1200 (29%)
+   vulnerable function-runs with the labelled CWE among the 5 retrieved: 178 of 600 (30%)
+      labelled CWE retrieved   n= 178  detected 42%   exact line 34%
+      not retrieved            n= 422  detected 20%   exact line 11%
+   functions grounded in most runs: 127; the rest: 273. With-minus-without on each group:
+      grounded in most runs    73 vulnerable / 54 non-vulnerable   recall difference +0.228   false positive difference +0.154
+      not grounded             127 vulnerable / 146 non-vulnerable   recall difference +0.013   false positive difference +0.014
+   Where nothing was grounded the two conditions send the same prompt, so those differences are run-to-run noise.
+
+C. CheckGate against CodeQL, on the 395 functions CodeQL could be located in
+             recall                 false positive rate    precision F1                     line exact (all vuln) 
+   with      0.261 [0.182, 0.345]   0.122 [0.082, 0.164]   0.683    0.378 [0.283, 0.467]   0.172 [0.102, 0.253]  
+   without   0.168 [0.103, 0.243]   0.069 [0.040, 0.102]   0.709    0.272 [0.179, 0.365]   0.096 [0.042, 0.160]  
+   codeql    0.096 [0.040, 0.172]   0.025 [0.005, 0.055]   0.792    0.171 [0.073, 0.287]   0.035 [0.000, 0.086]  
+   CheckGate (with) minus CodeQL:
+      recall                         +0.165 [+0.098, +0.238]
+      false positive rate            +0.096 [+0.056, +0.140]
+      F1                             +0.206 [+0.115, +0.297]
+      line exact (all vulnerable)    +0.136 [+0.067, +0.210]
+   CodeQL counts a function as detected when any of its alerts falls inside it, which is generous to CodeQL.
+
+D. Stability across the runs
+   with      functions where the runs disagree on detection: 52 of 400 (13%)   recall by run 0.275, 0.290, 0.240   false positive rate by run 0.120, 0.145, 0.140
+   without   functions where the runs disagree on detection: 26 of 400 (6%)   recall by run 0.180, 0.160, 0.190   false positive rate by run 0.075, 0.090, 0.085
+   neutral   functions where the runs disagree on detection: 19 of 400 (5%)   recall by run 0.155, 0.165, 0.165   false positive rate by run 0.075, 0.070, 0.070
+
+E. Results by function length (median length 552 characters; vulnerable functions are longer in the data, so check that results do not just follow length)
+   shorter half  (97 vulnerable, 103 non-vulnerable)  with: recall 0.223 false pos 0.068   without: recall 0.131 false pos 0.029   codeql: recall 0.042 false pos 0.019
+   longer half   (103 vulnerable, 97 non-vulnerable)  with: recall 0.311 false pos 0.206   without: recall 0.220 false pos 0.141   codeql: recall 0.147 false pos 0.032
+
+F. Naming a CWE (the labelled CWE can be broader or narrower than what the model names; 'without' is told not to guess a CWE, so compare with 'neutral', not 'without')
+   with      vulnerable runs with a finding:  161  name a CWE 51%  name the labelled CWE 22%
+             non-vulnerable runs with a finding:   81  name a CWE 38%
+   without   vulnerable runs with a finding:  106  name a CWE 3%  name the labelled CWE 0%
+             non-vulnerable runs with a finding:   50  name a CWE 0%
+   neutral   vulnerable runs with a finding:   97  name a CWE 6%  name the labelled CWE 0%
+             non-vulnerable runs with a finding:   43  name a CWE 7%
+
+G. Separating the effect of the references from the effect of the caution sentence
+   'without' tells the model not to guess a CWE; 'neutral' says only that no entries are provided.
+   references effect: with minus neutral, functions grounded in most runs  (73 vulnerable, 54 non-vulnerable functions)
+      recall                         +0.251 [+0.157, +0.351]
+      false positive rate            +0.167 [+0.098, +0.258]
+      F1                             +0.181 [+0.090, +0.292]
+      line exact (all vulnerable)    +0.210 [+0.117, +0.310]
+   caution effect: without minus neutral, all functions  (200 vulnerable, 200 non-vulnerable functions)
+      recall                         +0.015 [-0.010, +0.042]
+      false positive rate            +0.012 [-0.008, +0.033]
+      F1                             +0.018 [-0.018, +0.057]
+      line exact (all vulnerable)    +0.013 [-0.008, +0.037]
+   caution effect again: with minus neutral, functions NOT grounded (same prompts as 'without' versus 'neutral')  (127 vulnerable, 146 non-vulnerable functions)
+      recall                         +0.024 [-0.005, +0.050]
+      false positive rate            +0.025 [+0.000, +0.052]
+      F1                             +0.036 [-0.010, +0.075]
+      line exact (all vulnerable)    +0.016 [+0.005, +0.028]
+   Levels on the grounded functions:
+      with      recall 0.584   false positive rate 0.333
+      without   recall 0.356   false positive rate 0.179
+      neutral   recall 0.333   false positive rate 0.167
+   Reading: if 'with minus neutral' on the grounded functions is still clearly above 0, the reference text itself pushes the model to report more.
+   If 'without minus neutral' is clearly below 0, the caution sentence suppresses findings.
