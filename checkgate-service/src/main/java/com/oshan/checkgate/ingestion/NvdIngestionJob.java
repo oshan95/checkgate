@@ -5,12 +5,14 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
+import org.springframework.context.annotation.Profile;
 
 import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.Map;
 
 @Component
+@Profile("!eval")
 public class NvdIngestionJob {
 
     private static final Logger log = LoggerFactory.getLogger(NvdIngestionJob.class);
