@@ -1,0 +1,22 @@
+items in the key: 72   scored by the judge: 72   missing: 0   unusable replies: 0
+
+A. Scores by group (1 to 5; 95% interval in brackets)
+   group                          n   clarity                trustworthiness        words per explanation
+   CodeQL messages               24   2.17 [1.92, 2.46]     2.54 [2.04, 3.04]     72
+   CheckGate with references     24   4.08 [3.83, 4.33]     3.75 [3.33, 4.12]     27
+   CheckGate neutral control     24   4.42 [4.12, 4.67]     4.12 [3.67, 4.54]     29
+
+B. Differences in mean score (first minus second; an interval that includes 0 means it could be chance)
+   CheckGate with references minus CodeQL (RQ3)                                   clarity          +1.92 [+1.54, +2.29]
+   CheckGate with references minus CodeQL (RQ3)                                   trustworthiness  +1.21 [+0.58, +1.83]
+   CheckGate neutral control minus CodeQL                                         clarity          +2.25 [+1.83, +2.62]
+   CheckGate neutral control minus CodeQL                                         trustworthiness  +1.58 [+0.92, +2.25]
+   with references minus neutral control (does grounding change the explanation?) clarity          -0.33 [-0.71, +0.04]
+   with references minus neutral control (does grounding change the explanation?) trustworthiness  -0.38 [-0.96, +0.21]
+
+C. Does the score just follow explanation length? (Spearman correlation across all scored items)
+   words against clarity          +0.37
+   words against trustworthiness  +0.10
+   Near 0 means length is not driving the scores. Above about +0.4 means the judge rewards length and the results need that caveat.
+
+D. Your scores against the judge's (0 items you scored that the judge also scored)
